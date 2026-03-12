@@ -1,0 +1,92 @@
+# LeadFlow Campaign Config Template
+# Copy this file and customize for each client/campaign.
+
+client_name: "Acme Corp"
+campaign_slug: "acme-q1-2026"
+
+# ICP (Ideal Customer Profile) — used by icp_qualification step
+icp_description: |
+  B2B SaaS companies with 50-500 employees in the US.
+  Must be in technology, fintech, or healthcare verticals.
+  Ideally Series A+ funded with a dedicated marketing team.
+
+target_titles:
+  - "VP of Marketing"
+  - "Head of Growth"
+  - "CMO"
+  - "Director of Marketing"
+  - "Director of Demand Gen"
+
+target_industries:
+  - "SaaS"
+  - "Technology"
+  - "Fintech"
+  - "Healthcare IT"
+
+excluded_domains:
+  - "gmail.com"
+  - "yahoo.com"
+  - "hotmail.com"
+
+# Email generation settings
+email_tone: "professional"  # professional | casual | bold
+email_cta: "Book a 15-minute call to see how we can help."
+sender_name: "John Smith"
+sender_company: "GrowthPal"
+sender_value_prop: |
+  We help B2B SaaS companies book 30+ qualified meetings per month
+  using AI-powered outbound at a fraction of the cost of hiring SDRs.
+
+# Pipeline settings
+steps:
+  - "all"  # or list specific: ["company_research", "icp_qualification", ...]
+concurrency: 20
+
+# Deepline — waterfall enrichment across 15+ providers (Apollo, Hunter, PDL, etc.)
+# BYOK tier is FREE — you pay providers directly, no markup
+# Install: curl -s "https://code.deepline.com/api/v2/cli/install" | bash
+use_deepline: false
+deepline_before_step: "company_research"  # Enrich contact data before AI analysis
+
+# Custom AI Enrichment Steps
+# Define any number of custom AI steps with your own prompts.
+# Use {{field_name}} to reference lead data (e.g. {{company_name}}, {{company_summary}}).
+# Results are stored in the lead's raw_extra JSONB field.
+custom_ai_steps:
+  # Example: Find investors and funding history
+  # - name: "find_investors"
+  #   prompt: |
+  #     Research the investors and funding history for {{company_name}}.
+  #     Website: {{website}}
+  #     Website content: {{website_content}}
+  #     What rounds have they raised? Who led each round? What was the total funding?
+  #   output_field: "investors"
+  #   model: "gpt-4o"
+  #   scrape_website: true
+  #   max_tokens: 500
+
+  # Example: Identify pain points
+  # - name: "pain_points"
+  #   prompt: |
+  #     Based on this company's profile, identify their top 3 business pain points:
+  #     Company: {{company_name}}
+  #     Summary: {{company_summary}}
+  #     Industry: {{industry}}
+  #   output_field: "pain_points"
+  #   model: "gpt-4o-mini"
+
+  # Example: Gate step — only continue if company has competitors
+  # - name: "competitor_check"
+  #   prompt: |
+  #     Does {{company_name}} operate in a competitive market?
+  #     Summary: {{company_summary}}
+  #     List their main competitors if any.
+  #   output_field: "competitors"
+  #   model: "gpt-4o-mini"
+  #   is_gate: true
+  #   gate_field: "has_competitors"
+
+custom_ai_after_step: "signal_detection"  # Where to insert custom steps in the pipeline
+
+# Smartlead
+smartlead_campaign_id: null  # Set after creating campaign in Smartlead
