@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase, type Campaign } from "@/lib/supabase";
+import { getSupabase, type Campaign } from "@/lib/supabase";
 import { formatDate, formatNumber, formatCost } from "@/lib/utils";
 
 type CampaignWithStats = Campaign & {
@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     // Fetch campaigns
-    const { data: campaignsData } = await supabase
+    const { data: campaignsData } = await getSupabase()
       .from("campaigns")
       .select("*, clients(name)")
       .order("created_at", { ascending: false });
@@ -52,7 +52,7 @@ export default function DashboardPage() {
       gCost = 0;
 
     for (const c of campaignsData) {
-      const { data: leads } = await supabase
+      const { data: leads } = await getSupabase()
         .from("leads")
         .select("pipeline_status")
         .eq("campaign_id", c.id);
@@ -64,7 +64,7 @@ export default function DashboardPage() {
         total++;
       }
 
-      const { data: costData } = await supabase
+      const { data: costData } = await getSupabase()
         .from("enrichment_logs")
         .select("cost")
         .eq("campaign_id", c.id);

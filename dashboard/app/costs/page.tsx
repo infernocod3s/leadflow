@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { formatCost, formatNumber } from "@/lib/utils";
 
 type CampaignCost = {
@@ -33,7 +33,7 @@ export default function CostsPage() {
 
   async function loadCosts() {
     // Fetch all enrichment logs with campaign info
-    const { data: logs } = await supabase
+    const { data: logs } = await getSupabase()
       .from("enrichment_logs")
       .select("step_name, cost, input_tokens, output_tokens, campaign_id");
 
@@ -43,7 +43,7 @@ export default function CostsPage() {
     }
 
     // Fetch campaigns for slug mapping
-    const { data: campaigns } = await supabase
+    const { data: campaigns } = await getSupabase()
       .from("campaigns")
       .select("id, slug");
 

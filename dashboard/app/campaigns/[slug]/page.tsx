@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { supabase, type Lead, type Campaign } from "@/lib/supabase";
+import { getSupabase, type Lead, type Campaign } from "@/lib/supabase";
 import {
   formatDate,
   formatNumber,
@@ -42,7 +42,7 @@ export default function CampaignPage() {
 
   async function loadCampaign() {
     // Fetch campaign
-    const { data: cData } = await supabase
+    const { data: cData } = await getSupabase()
       .from("campaigns")
       .select("*, clients(name)")
       .eq("slug", slug)
@@ -55,7 +55,7 @@ export default function CampaignPage() {
     setCampaign(cData);
 
     // Fetch all leads for status counts
-    const { data: allLeads } = await supabase
+    const { data: allLeads } = await getSupabase()
       .from("leads")
       .select("pipeline_status")
       .eq("campaign_id", cData.id);
@@ -67,7 +67,7 @@ export default function CampaignPage() {
     setStatusCounts(counts);
 
     // Fetch leads page (limit 100)
-    let query = supabase
+    let query = getSupabase()
       .from("leads")
       .select("*")
       .eq("campaign_id", cData.id)
@@ -82,7 +82,7 @@ export default function CampaignPage() {
     setLeads(leadsData || []);
 
     // Fetch step costs
-    const { data: logs } = await supabase
+    const { data: logs } = await getSupabase()
       .from("enrichment_logs")
       .select("step_name, cost, duration_ms, success")
       .eq("campaign_id", cData.id);
