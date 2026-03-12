@@ -56,19 +56,26 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-gray-500">Loading settings...</div>
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <div className="skeleton h-8 w-32 mb-8" />
+        <div className="card p-6">
+          <div className="skeleton h-4 w-36 mb-3" />
+          <div className="flex gap-3">
+            <div className="skeleton h-10 flex-1" />
+            <div className="skeleton h-10 w-20 rounded-lg" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto animate-fade-in">
       <h1 className="text-2xl font-bold text-white mb-8">Settings</h1>
 
       <div className="space-y-6">
         {SETTINGS_SCHEMA.map((setting) => (
-          <div key={setting.key} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div key={setting.key} className="card p-6">
             <label className="block text-sm text-gray-300 mb-2">{setting.label}</label>
             <div className="flex gap-3">
               <input
@@ -83,7 +90,11 @@ export default function SettingsPage() {
               <button
                 onClick={() => saveSetting(setting.key)}
                 disabled={saving === setting.key}
-                className="btn-primary whitespace-nowrap"
+                className={
+                  saved === setting.key
+                    ? "btn bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
+                    : "btn-primary whitespace-nowrap"
+                }
               >
                 {saving === setting.key
                   ? "Saving..."

@@ -1,11 +1,13 @@
-"""Step 2: ICP qualification — qualify company vs Ideal Customer Profile (GATE)."""
+"""Step 2: ICP qualification — qualify company vs Ideal Customer Profile (GATE).
+
+Now uses configurable model (default: Gemini Flash Lite) instead of GPT-4o.
+"""
 
 from typing import Any
 
-from growthpal.ai.openai_client import chat_json
+from growthpal.ai.router import chat_json
 from growthpal.ai.prompts import icp_qualification_prompt
 from growthpal.config import CampaignConfig
-from growthpal.constants import Model
 from growthpal.enrichments.base import EnrichmentStep
 from growthpal.pipeline.registry import register
 from growthpal.utils.logger import get_logger
@@ -27,14 +29,15 @@ class ICPQualificationStep(EnrichmentStep):
             return {
                 "icp_qualified": False,
                 "icp_reason": "No company data available for qualification",
-                "_model": Model.GPT4O,
+                "_model": None,
                 "_input_tokens": 0,
                 "_output_tokens": 0,
                 "_cost": 0.0,
             }
 
         messages = icp_qualification_prompt(company_summary, icp_description, target_industries)
-        result = await chat_json(messages, model=Model.GPT4O, max_tokens=300)
+        model = campaign_config.classification_model
+        result = await chat_json(messages, model=model, max_tokens=300)
         data = result["data"]
 
         return {

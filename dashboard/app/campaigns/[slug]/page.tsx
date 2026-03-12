@@ -192,18 +192,51 @@ export default function CampaignPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-gray-500">Loading campaign...</div>
+      <div className="space-y-8 animate-fade-in">
+        <div>
+          <div className="skeleton h-4 w-28 mb-3" />
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="skeleton h-7 w-48 mb-2" />
+              <div className="skeleton h-4 w-64" />
+            </div>
+            <div className="flex gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="skeleton h-9 w-24 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="card p-3">
+              <div className="skeleton h-3 w-12 mb-2" />
+              <div className="skeleton h-5 w-8" />
+            </div>
+          ))}
+        </div>
+        <div className="card p-6">
+          <div className="skeleton h-5 w-32 mb-4" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="skeleton h-8 w-full mb-2" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!campaign) {
     return (
-      <div className="text-center py-20">
-        <p className="text-gray-500 text-lg">Campaign not found: {slug}</p>
-        <Link href="/" className="text-amber-400 hover:underline mt-4 block">
-          Back to dashboard
+      <div className="text-center py-20 animate-fade-in">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-800/60 mb-4">
+          <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </div>
+        <p className="text-gray-300 text-lg mb-1">Campaign not found</p>
+        <p className="text-gray-500 text-sm mb-6">No campaign matching &ldquo;{slug}&rdquo; exists.</p>
+        <Link href="/" className="btn-secondary">
+          &larr; Back to dashboard
         </Link>
       </div>
     );
@@ -216,7 +249,7 @@ export default function CampaignPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
         <Link href="/" className="text-sm text-gray-500 hover:text-gray-300 mb-2 block">
@@ -233,17 +266,17 @@ export default function CampaignPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowImport(true)} className="btn-secondary">
+            <button onClick={() => setShowImport(true)} className="btn-secondary text-xs">
               Import CSV
             </button>
-            <button onClick={handleExport} className="btn-secondary">
+            <button onClick={handleExport} className="btn-secondary text-xs">
               Export CSV
             </button>
-            <button onClick={() => setShowPush(true)} className="btn-secondary">
+            <button onClick={() => setShowPush(true)} className="btn-secondary text-xs">
               Push to Smartlead
             </button>
-            <button onClick={() => setShowConfig(true)} className="btn-secondary">
-              Edit Config
+            <button onClick={() => setShowConfig(true)} className="btn-secondary text-xs">
+              Config
             </button>
           </div>
         </div>
@@ -254,31 +287,35 @@ export default function CampaignPage() {
         <button
           onClick={() => setFilter("all")}
           className={cn(
-            "bg-gray-900 border rounded-xl p-3 text-left transition-colors",
-            filter === "all" ? "border-amber-500" : "border-gray-800 hover:border-gray-700"
+            "card p-3 text-left transition-all duration-200",
+            filter === "all"
+              ? "border-amber-500/60 bg-amber-500/5 shadow-glow-gold-sm"
+              : "hover:border-gray-700/60"
           )}
         >
-          <div className="text-xs text-gray-500">All</div>
-          <div className="text-lg font-bold text-white">{formatNumber(totalLeads)}</div>
+          <div className="text-[10px] text-gray-500 uppercase tracking-wider">All</div>
+          <div className="text-lg font-bold text-white tabular-nums">{formatNumber(totalLeads)}</div>
         </button>
         {statuses.map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
             className={cn(
-              "bg-gray-900 border rounded-xl p-3 text-left transition-colors",
-              filter === s ? "border-amber-500" : "border-gray-800 hover:border-gray-700"
+              "card p-3 text-left transition-all duration-200",
+              filter === s
+                ? "border-amber-500/60 bg-amber-500/5 shadow-glow-gold-sm"
+                : "hover:border-gray-700/60"
             )}
           >
-            <div className="text-xs text-gray-500">{s.replace(/_/g, " ")}</div>
-            <div className="text-lg font-bold text-white">{formatNumber(statusCounts[s] || 0)}</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">{s.replace(/_/g, " ")}</div>
+            <div className="text-lg font-bold text-white tabular-nums">{formatNumber(statusCounts[s] || 0)}</div>
           </button>
         ))}
       </div>
 
       {/* Cost and step breakdown */}
       {stepCosts.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Step Breakdown</h2>
             <div className="text-emerald-400 font-bold">
@@ -293,26 +330,26 @@ export default function CampaignPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b border-gray-800">
-                  <th className="pb-2 pr-4">Step</th>
-                  <th className="pb-2 pr-4 text-right">Calls</th>
-                  <th className="pb-2 pr-4 text-right">Success</th>
-                  <th className="pb-2 pr-4 text-right">Failures</th>
-                  <th className="pb-2 pr-4 text-right">Avg Time</th>
-                  <th className="pb-2 text-right">Cost</th>
+                <tr className="text-left border-b border-gray-800/40">
+                  <th className="table-header pb-2 pr-4">Step</th>
+                  <th className="table-header pb-2 pr-4 text-right">Calls</th>
+                  <th className="table-header pb-2 pr-4 text-right">Success</th>
+                  <th className="table-header pb-2 pr-4 text-right">Failures</th>
+                  <th className="table-header pb-2 pr-4 text-right">Avg Time</th>
+                  <th className="table-header pb-2 text-right">Cost</th>
                 </tr>
               </thead>
               <tbody>
                 {stepCosts.map((s) => (
-                  <tr key={s.step_name} className="border-b border-gray-800/50">
+                  <tr key={s.step_name} className="table-row">
                     <td className="py-2 pr-4 text-white font-medium">{s.step_name}</td>
-                    <td className="py-2 pr-4 text-right">{formatNumber(s.total_calls)}</td>
-                    <td className="py-2 pr-4 text-right text-green-400">{formatNumber(s.success_count)}</td>
-                    <td className="py-2 pr-4 text-right text-red-400">
+                    <td className="py-2 pr-4 text-right tabular-nums">{formatNumber(s.total_calls)}</td>
+                    <td className="py-2 pr-4 text-right text-green-400 tabular-nums">{formatNumber(s.success_count)}</td>
+                    <td className="py-2 pr-4 text-right text-red-400 tabular-nums">
                       {s.failure_count > 0 ? formatNumber(s.failure_count) : "—"}
                     </td>
-                    <td className="py-2 pr-4 text-right text-gray-400">{Math.round(s.avg_duration_ms)}ms</td>
-                    <td className="py-2 text-right text-emerald-400">{formatCost(s.total_cost)}</td>
+                    <td className="py-2 pr-4 text-right text-gray-400 tabular-nums">{Math.round(s.avg_duration_ms)}ms</td>
+                    <td className="py-2 text-right text-emerald-400 tabular-nums">{formatCost(s.total_cost)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -322,8 +359,8 @@ export default function CampaignPage() {
       )}
 
       {/* Leads table */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-gray-800">
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-gray-800/40">
           <h2 className="text-lg font-semibold text-white">
             Leads{" "}
             <span className="text-sm text-gray-500 font-normal">
@@ -334,13 +371,13 @@ export default function CampaignPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 border-b border-gray-800 bg-gray-900/50">
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Company</th>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">ICP</th>
+              <tr className="text-left border-b border-gray-800/40 bg-gray-900/50">
+                <th className="table-header px-4 py-3">Email</th>
+                <th className="table-header px-4 py-3">Name</th>
+                <th className="table-header px-4 py-3">Company</th>
+                <th className="table-header px-4 py-3">Title</th>
+                <th className="table-header px-4 py-3">Status</th>
+                <th className="table-header px-4 py-3">ICP</th>
               </tr>
             </thead>
             <tbody>
@@ -348,9 +385,9 @@ export default function CampaignPage() {
                 <tr
                   key={lead.id}
                   onClick={() => setSelectedLead(lead)}
-                  className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer transition-colors"
+                  className="table-row cursor-pointer group"
                 >
-                  <td className="px-4 py-3 text-white font-medium">
+                  <td className="px-4 py-3 text-white font-medium group-hover:text-amber-400/90 transition-colors">
                     {lead.email || lead.raw_email || "—"}
                   </td>
                   <td className="px-4 py-3">
@@ -378,7 +415,9 @@ export default function CampaignPage() {
               {leads.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
-                    No leads found
+                    {filter !== "all"
+                      ? `No leads with status "${filter.replace(/_/g, " ")}". Try selecting a different filter.`
+                      : "No leads found. Import a CSV to get started."}
                   </td>
                 </tr>
               )}
@@ -527,8 +566,8 @@ function ImportModal({
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               className={cn(
-                "border-2 border-dashed rounded-xl p-12 text-center transition-colors",
-                dragOver ? "border-amber-500 bg-blue-500/10" : "border-gray-700"
+                "border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200",
+                dragOver ? "border-amber-500 bg-amber-500/5 shadow-glow-gold" : "border-gray-700"
               )}
             >
               <p className="text-gray-400 mb-3">Drag & drop a CSV file here, or</p>
@@ -584,15 +623,15 @@ function ImportModal({
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="text-gray-500 border-b border-gray-800">
+                        <tr className="border-b border-gray-800/40">
                           {columns.slice(0, 6).map((col) => (
-                            <th key={col} className="pb-1 pr-3 text-left">{col}</th>
+                            <th key={col} className="table-header pb-1 pr-3 text-left">{col}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {parsed.slice(0, 5).map((row, i) => (
-                          <tr key={i} className="border-b border-gray-800/50">
+                          <tr key={i} className="table-row">
                             {columns.slice(0, 6).map((col) => (
                               <td key={col} className="py-1 pr-3 text-gray-300 max-w-[150px] truncate">{row[col]}</td>
                             ))}
@@ -611,9 +650,9 @@ function ImportModal({
                     <span>Importing...</span>
                     <span>{progress.done} / {progress.total}</span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full bg-gray-800/50 rounded-full h-1.5">
                     <div
-                      className="bg-amber-500 h-2 rounded-full transition-all"
+                      className="bg-gradient-to-r from-amber-600 to-amber-400 h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }}
                     />
                   </div>
@@ -697,7 +736,7 @@ function PushModal({
       <div className="max-w-md w-full">
         <ModalHeader title="Push to Smartlead" onClose={onClose} />
         <div className="p-6 space-y-4">
-          <div className="bg-gray-800 rounded-lg p-3 text-sm">
+          <div className="bg-gray-800/60 rounded-lg p-3 text-sm">
             <span className="text-gray-400">Leads ready to push: </span>
             <span className="text-white font-bold">{readyCount}</span>
             <span className="text-gray-500 ml-1">(status: email_generated)</span>
@@ -725,18 +764,18 @@ function PushModal({
           </div>
 
           {error && (
-            <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-sm text-red-400">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
               {error}
             </div>
           )}
 
           {result ? (
             <div className="space-y-2">
-              <div className="bg-green-900/30 border border-green-800 rounded-lg p-3 text-sm text-green-400">
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm text-green-400">
                 Pushed {result.pushed} leads to Smartlead
               </div>
               {result.errors && result.errors.length > 0 && (
-                <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-sm text-red-400">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
                   <p className="font-medium mb-1">{result.errors.length} errors:</p>
                   {result.errors.map((e, i) => <p key={i} className="text-xs">{e}</p>)}
                 </div>
@@ -808,7 +847,7 @@ function ConfigModal({
             spellCheck={false}
           />
           {error && (
-            <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-sm text-red-400">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -882,11 +921,11 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-800 rounded-2xl"
+        className="bg-gray-900 border border-gray-800/60 rounded-2xl shadow-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -897,9 +936,9 @@ function ModalOverlay({ onClose, children }: { onClose: () => void; children: Re
 
 function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <div className="flex items-center justify-between p-6 border-b border-gray-800">
+    <div className="flex items-center justify-between p-6 border-b border-gray-800/40">
       <h3 className="text-lg font-semibold text-white">{title}</h3>
-      <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors text-xl">
+      <button onClick={onClose} className="text-gray-500 hover:text-white hover:bg-gray-800/60 transition-all rounded-lg w-8 h-8 flex items-center justify-center text-xl">
         &times;
       </button>
     </div>

@@ -104,14 +104,41 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-gray-500">Loading dashboard...</div>
+      <div className="space-y-8 animate-fade-in">
+        <div>
+          <div className="skeleton h-8 w-40 mb-6" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card p-4">
+                <div className="skeleton h-3 w-16 mb-2" />
+                <div className="skeleton h-6 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="skeleton h-6 w-32 mb-4" />
+          <div className="grid gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="skeleton h-5 w-40 mb-2" />
+                    <div className="skeleton h-3 w-56" />
+                  </div>
+                  <div className="skeleton h-8 w-12" />
+                </div>
+                <div className="skeleton h-1.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Global stats */}
       <div>
         <h1 className="text-2xl font-bold text-white mb-6">Dashboard</h1>
@@ -149,14 +176,24 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-lg font-semibold text-white mb-4">Campaigns</h2>
         {campaigns.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <p className="text-lg">No campaigns yet</p>
-            <p className="text-sm mt-2">
-              Import leads with:{" "}
-              <code className="bg-gray-800 px-2 py-1 rounded">
+          <div className="card text-center py-20 px-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 mb-4">
+              <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </div>
+            <p className="text-lg text-gray-300 mb-2">No campaigns yet</p>
+            <p className="text-sm text-gray-500 mb-6">
+              Get started by creating your first campaign or importing leads via CLI.
+            </p>
+            <div className="flex items-center justify-center gap-4">
+              <Link href="/campaigns/new" className="btn-primary py-2.5">
+                Create Campaign
+              </Link>
+              <code className="bg-gray-800/60 border border-gray-700/40 px-3 py-2 rounded-lg text-sm text-gray-400">
                 growthpal import -f leads.csv -c my-campaign
               </code>
-            </p>
+            </div>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -164,7 +201,7 @@ export default function DashboardPage() {
               <Link
                 key={c.id}
                 href={`/campaigns/${c.slug}`}
-                className="block bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors"
+                className="block card-hover p-6"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -177,7 +214,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-2xl font-bold text-white tabular-nums">
                       {formatNumber(c.total_leads)}
                     </div>
                     <div className="text-xs text-gray-500">leads</div>
@@ -185,11 +222,11 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Pipeline progress bar */}
-                <div className="flex h-2 rounded-full overflow-hidden bg-gray-800">
+                <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-800/50">
                   {c.total_leads > 0 && (
                     <>
                       <div
-                        className="bg-green-500"
+                        className="bg-green-500 transition-all duration-500"
                         style={{
                           width: `${
                             (((c.lead_counts["enriched"] || 0) +
@@ -200,7 +237,7 @@ export default function DashboardPage() {
                         }}
                       />
                       <div
-                        className="bg-indigo-500"
+                        className="bg-indigo-500 transition-all duration-500"
                         style={{
                           width: `${
                             ((c.lead_counts["pushed"] || 0) / c.total_leads) *
@@ -209,7 +246,7 @@ export default function DashboardPage() {
                         }}
                       />
                       <div
-                        className="bg-orange-500"
+                        className="bg-orange-500 transition-all duration-500"
                         style={{
                           width: `${
                             ((c.lead_counts["disqualified"] || 0) /
@@ -219,7 +256,7 @@ export default function DashboardPage() {
                         }}
                       />
                       <div
-                        className="bg-blue-500"
+                        className="bg-blue-500 transition-all duration-500"
                         style={{
                           width: `${
                             ((c.lead_counts["in_progress"] || 0) /
@@ -229,7 +266,7 @@ export default function DashboardPage() {
                         }}
                       />
                       <div
-                        className="bg-red-500"
+                        className="bg-red-500 transition-all duration-500"
                         style={{
                           width: `${
                             ((c.lead_counts["error"] || 0) / c.total_leads) *
@@ -286,9 +323,9 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <div className={`text-xl font-bold ${color}`}>{value}</div>
+    <div className="card p-4">
+      <div className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">{label}</div>
+      <div className={`text-xl font-bold tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }

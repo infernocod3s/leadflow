@@ -108,32 +108,48 @@ export default function CostsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-gray-500">Loading costs...</div>
+      <div className="space-y-8 animate-fade-in">
+        <div>
+          <div className="skeleton h-8 w-40 mb-6" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="card p-6">
+                <div className="skeleton h-3 w-20 mb-2" />
+                <div className="skeleton h-8 w-24" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card p-6">
+          <div className="skeleton h-6 w-32 mb-4" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton h-8 w-full mb-2" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-white mb-6">Cost Overview</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="text-xs text-gray-500 mb-1">Total Spend</div>
-            <div className="text-3xl font-bold text-emerald-400">
+          <div className="card p-6">
+            <div className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Total Spend</div>
+            <div className="text-3xl font-bold text-emerald-400 tabular-nums">
               {formatCost(totalCost)}
             </div>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="text-xs text-gray-500 mb-1">Total API Calls</div>
-            <div className="text-3xl font-bold text-white">
+          <div className="card p-6">
+            <div className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Total API Calls</div>
+            <div className="text-3xl font-bold text-white tabular-nums">
               {formatNumber(totalCalls)}
             </div>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="text-xs text-gray-500 mb-1">Avg Cost / Call</div>
-            <div className="text-3xl font-bold text-white">
+          <div className="card p-6">
+            <div className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Avg Cost / Call</div>
+            <div className="text-3xl font-bold text-white tabular-nums">
               {totalCalls > 0 ? formatCost(totalCost / totalCalls) : "$0.00"}
             </div>
           </div>
@@ -141,34 +157,34 @@ export default function CostsPage() {
       </div>
 
       {/* Cost by step */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="card p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Cost by Step</h2>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-800">
-              <th className="pb-2 pr-4">Step</th>
-              <th className="pb-2 pr-4 text-right">Calls</th>
-              <th className="pb-2 pr-4 text-right">Total Cost</th>
-              <th className="pb-2 pr-4 text-right">Avg / Call</th>
-              <th className="pb-2 text-right">% of Total</th>
+            <tr className="text-left border-b border-gray-800/40">
+              <th className="table-header pb-2 pr-4">Step</th>
+              <th className="table-header pb-2 pr-4 text-right">Calls</th>
+              <th className="table-header pb-2 pr-4 text-right">Total Cost</th>
+              <th className="table-header pb-2 pr-4 text-right">Avg / Call</th>
+              <th className="table-header pb-2 text-right">% of Total</th>
             </tr>
           </thead>
           <tbody>
             {stepCosts.map((s) => (
-              <tr key={s.step_name} className="border-b border-gray-800/50">
+              <tr key={s.step_name} className="table-row">
                 <td className="py-2 pr-4 text-white font-medium">
                   {s.step_name}
                 </td>
-                <td className="py-2 pr-4 text-right">
+                <td className="py-2 pr-4 text-right tabular-nums">
                   {formatNumber(s.total_calls)}
                 </td>
-                <td className="py-2 pr-4 text-right text-emerald-400">
+                <td className="py-2 pr-4 text-right text-emerald-400 tabular-nums">
                   {formatCost(s.total_cost)}
                 </td>
-                <td className="py-2 pr-4 text-right text-gray-400">
+                <td className="py-2 pr-4 text-right text-gray-400 tabular-nums">
                   {formatCost(s.avg_cost_per_call)}
                 </td>
-                <td className="py-2 text-right text-gray-400">
+                <td className="py-2 text-right text-gray-400 tabular-nums">
                   {totalCost > 0
                     ? `${((s.total_cost / totalCost) * 100).toFixed(1)}%`
                     : "0%"}
@@ -180,44 +196,44 @@ export default function CostsPage() {
       </div>
 
       {/* Cost by campaign */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="card p-6">
         <h2 className="text-lg font-semibold text-white mb-4">
           Cost by Campaign
         </h2>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-800">
-              <th className="pb-2 pr-4">Campaign</th>
-              <th className="pb-2 pr-4 text-right">API Calls</th>
-              <th className="pb-2 pr-4 text-right">Tokens In</th>
-              <th className="pb-2 pr-4 text-right">Tokens Out</th>
-              <th className="pb-2 text-right">Cost</th>
+            <tr className="text-left border-b border-gray-800/40">
+              <th className="table-header pb-2 pr-4">Campaign</th>
+              <th className="table-header pb-2 pr-4 text-right">API Calls</th>
+              <th className="table-header pb-2 pr-4 text-right">Tokens In</th>
+              <th className="table-header pb-2 pr-4 text-right">Tokens Out</th>
+              <th className="table-header pb-2 text-right">Cost</th>
             </tr>
           </thead>
           <tbody>
             {campaignCosts.map((c) => (
               <tr
                 key={c.campaign_slug}
-                className="border-b border-gray-800/50"
+                className="table-row"
               >
                 <td className="py-2 pr-4">
                   <Link
                     href={`/campaigns/${c.campaign_slug}`}
-                    className="text-blue-400 hover:underline font-medium"
+                    className="text-amber-400/80 hover:text-amber-400 font-medium transition-colors"
                   >
                     {c.campaign_slug}
                   </Link>
                 </td>
-                <td className="py-2 pr-4 text-right">
+                <td className="py-2 pr-4 text-right tabular-nums">
                   {formatNumber(c.total_calls)}
                 </td>
-                <td className="py-2 pr-4 text-right text-gray-400">
+                <td className="py-2 pr-4 text-right text-gray-400 tabular-nums">
                   {formatNumber(c.total_input_tokens)}
                 </td>
-                <td className="py-2 pr-4 text-right text-gray-400">
+                <td className="py-2 pr-4 text-right text-gray-400 tabular-nums">
                   {formatNumber(c.total_output_tokens)}
                 </td>
-                <td className="py-2 text-right text-emerald-400">
+                <td className="py-2 text-right text-emerald-400 tabular-nums">
                   {formatCost(c.total_cost)}
                 </td>
               </tr>

@@ -105,7 +105,7 @@ export default function NewCampaignPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto animate-fade-in">
       <Link href="/" className="text-sm text-gray-500 hover:text-gray-300 mb-4 block">
         &larr; Back
       </Link>
@@ -222,7 +222,7 @@ export default function NewCampaignPage() {
         </Section>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-sm text-red-400">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">
             {error}
           </div>
         )}
@@ -231,10 +231,10 @@ export default function NewCampaignPage() {
           type="submit"
           disabled={saving}
           className={cn(
-            "w-full py-3 rounded-xl font-semibold text-white transition-colors",
+            "w-full py-3 rounded-xl font-semibold text-white transition-all duration-200",
             saving
               ? "bg-amber-800 cursor-not-allowed"
-              : "bg-amber-600 hover:bg-amber-500"
+              : "bg-gradient-to-r from-amber-600 to-amber-500 hover:shadow-glow-gold active:scale-[0.99]"
           )}
         >
           {saving ? "Creating..." : "Create Campaign"}
@@ -248,8 +248,8 @@ export default function NewCampaignPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-      <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">{title}</h2>
+    <div className="card p-6 space-y-4">
+      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest pb-3 border-b border-gray-800/40">{title}</h2>
       {children}
     </div>
   );
@@ -292,11 +292,11 @@ function TagInput({
   }
 
   return (
-    <div className="flex flex-wrap gap-2 p-2 bg-gray-800 border border-gray-700 rounded-lg min-h-[42px]">
+    <div className="flex flex-wrap gap-2 p-2 bg-gray-800/60 border border-gray-700/50 rounded-lg min-h-[42px]">
       {tags.map((tag) => (
         <span
           key={tag}
-          className="flex items-center gap-1 bg-gray-700 text-gray-200 px-2 py-0.5 rounded text-sm"
+          className="flex items-center gap-1 bg-gray-700/50 text-gray-200 px-2 py-0.5 rounded-md text-xs ring-1 ring-gray-600/30"
         >
           {tag}
           <button
