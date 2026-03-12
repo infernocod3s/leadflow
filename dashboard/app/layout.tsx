@@ -30,6 +30,15 @@ export default function RootLayout({
               <Link href="/costs" className="hover:text-white transition-colors">
                 Costs
               </Link>
+              <Link href="/settings" className="hover:text-white transition-colors">
+                Settings
+              </Link>
+              <Link
+                href="/campaigns/new"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+              >
+                + New
+              </Link>
             </div>
           </div>
         </nav>
