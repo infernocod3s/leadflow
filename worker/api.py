@@ -9,7 +9,7 @@ from worker.config import BATCH_SIZE, CONCURRENCY, WORKER_ID
 from worker.db import get_active_campaigns, get_worker_stats
 from worker.stats import stats
 
-app = FastAPI(title="LeadFlow Worker", version="1.0.0")
+app = FastAPI(title="GrowthPal Worker", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,7 +22,7 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {
-        "service": "leadflow-worker",
+        "service": "growthpal-worker",
         "worker_id": WORKER_ID,
         "status": "running",
     }

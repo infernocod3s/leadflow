@@ -1,12 +1,12 @@
-# LeadFlow
+# GrowthPal
 
 **CLI-powered lead enrichment pipeline** — an open-source alternative to Clay.com.
 
 Import LinkedIn leads, enrich them with AI-powered company research, qualify against your ICP, find and verify emails through multi-provider waterfalls, generate personalized cold emails, and push directly to Smartlead — all from your terminal.
 
-## Why LeadFlow?
+## Why GrowthPal?
 
-| | Clay.com | LeadFlow |
+| | Clay.com | GrowthPal |
 |---|---|---|
 | **Cost** | $149–499/mo + credits | Free — BYOK (bring your own keys) |
 | **Email finding** | Built-in credits | Waterfall across Prospeo, TryKitt, BetterContact |
@@ -39,8 +39,8 @@ CSV Import (LinkedIn / AI-Ark leads)
 ### 1. Install
 
 ```bash
-git clone https://github.com/prabeshkhanal/leadflow.git
-cd leadflow
+git clone https://github.com/prabeshkhanal/growthpal.git
+cd growthpal
 pip install -e .
 ```
 
@@ -49,10 +49,10 @@ pip install -e .
 Create a free project at [supabase.com](https://supabase.com), then run the migration:
 
 ```bash
-leadflow migrate --db-url "postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres"
+growthpal migrate --db-url "postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres"
 ```
 
-Or paste the contents of `leadflow/db/migrations/001_initial.sql` into the Supabase SQL Editor.
+Or paste the contents of `growthpal/db/migrations/001_initial.sql` into the Supabase SQL Editor.
 
 ### 3. Configure
 
@@ -84,34 +84,34 @@ cp configs/_template.yaml configs/my-campaign.yaml
 
 ```bash
 # Import leads from CSV
-leadflow import -f leads.csv -c my-campaign --config configs/my-campaign.yaml
+growthpal import -f leads.csv -c my-campaign --config configs/my-campaign.yaml
 
 # Run the enrichment pipeline
-leadflow run -c my-campaign --config configs/my-campaign.yaml
+growthpal run -c my-campaign --config configs/my-campaign.yaml
 
 # Check stats
-leadflow stats -c my-campaign
+growthpal stats -c my-campaign
 
 # Push to Smartlead
-leadflow push -c my-campaign --smartlead-id 12345
+growthpal push -c my-campaign --smartlead-id 12345
 
 # Export enriched leads to CSV
-leadflow export -c my-campaign -o enriched.csv
+growthpal export -c my-campaign -o enriched.csv
 ```
 
 ## CLI Commands
 
 | Command | Description |
 |---|---|
-| `leadflow import` | Import leads from CSV into a campaign |
-| `leadflow run` | Run the enrichment pipeline |
-| `leadflow push` | Push qualified leads to Smartlead |
-| `leadflow export` | Export enriched leads to CSV |
-| `leadflow stats` | View campaign statistics and costs |
-| `leadflow campaigns` | List all campaigns |
-| `leadflow steps` | List available enrichment steps |
-| `leadflow inspect` | Inspect a single lead by email |
-| `leadflow migrate` | Run database migrations |
+| `growthpal import` | Import leads from CSV into a campaign |
+| `growthpal run` | Run the enrichment pipeline |
+| `growthpal push` | Push qualified leads to Smartlead |
+| `growthpal export` | Export enriched leads to CSV |
+| `growthpal stats` | View campaign statistics and costs |
+| `growthpal campaigns` | List all campaigns |
+| `growthpal steps` | List available enrichment steps |
+| `growthpal inspect` | Inspect a single lead by email |
+| `growthpal migrate` | Run database migrations |
 
 ## Custom AI Steps
 
@@ -150,7 +150,7 @@ Use `{{field_name}}` to inject any lead field into your prompts. Results are sto
 
 ## Email Finding Waterfall
 
-LeadFlow tries multiple providers in order, stopping at the first success:
+GrowthPal tries multiple providers in order, stopping at the first success:
 
 1. **Prospeo** — fast, reliable, free credits available
 2. **TryKitt** — good coverage fallback
@@ -190,7 +190,7 @@ Railway runs the lead processing workers 24/7. Scale to 50+ worker instances for
 
 - Go to [railway.app](https://railway.app)
 - New Project -> Deploy from GitHub repo
-- Select the `leadflow` repo
+- Select the `growthpal` repo
 
 ### 3. Set environment variables
 
@@ -215,7 +215,7 @@ POLL_INTERVAL=5
 ### 4. Run the worker migration
 
 ```bash
-leadflow migrate --db-url "postgresql://postgres:PASS@db.xxx.supabase.co:5432/postgres"
+growthpal migrate --db-url "postgresql://postgres:PASS@db.xxx.supabase.co:5432/postgres"
 ```
 
 This adds the `claim_leads()` function for concurrent worker support.
@@ -267,7 +267,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ## Architecture
 
 ```
-leadflow/               # Python package — enrichment pipeline
+growthpal/               # Python package — enrichment pipeline
 ├── ai/                 # OpenAI client + prompt templates
 ├── db/                 # Supabase client, queries, migrations
 ├── enrichments/        # 9 built-in steps + custom AI
@@ -317,7 +317,7 @@ Every API call is logged with:
 View costs via CLI or the dashboard:
 
 ```bash
-leadflow stats -c my-campaign
+growthpal stats -c my-campaign
 ```
 
 ## Development

@@ -233,8 +233,8 @@ export default function NewCampaignPage() {
           className={cn(
             "w-full py-3 rounded-xl font-semibold text-white transition-colors",
             saving
-              ? "bg-blue-800 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-500"
+              ? "bg-amber-800 cursor-not-allowed"
+              : "bg-amber-600 hover:bg-amber-500"
           )}
         >
           {saving ? "Creating..." : "Create Campaign"}

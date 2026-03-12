@@ -33,7 +33,7 @@ def main():
         log.error("SUPABASE_URL and SUPABASE_KEY are required.")
         raise SystemExit(1)
 
-    log.info(f"LeadFlow Worker {WORKER_ID} starting")
+    log.info(f"GrowthPal Worker {WORKER_ID} starting")
     log.info(f"API server on port {API_PORT}")
 
     # Start API in background thread

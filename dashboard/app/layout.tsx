@@ -3,7 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LeadFlow",
+  title: "GrowthPal",
   description: "Lead enrichment pipeline dashboard",
 };
 
@@ -18,10 +18,10 @@ export default function RootLayout({
         <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                LF
+              <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                GP
               </div>
-              <span className="text-lg font-semibold text-white">LeadFlow</span>
+              <span className="text-lg font-semibold text-white">GrowthPal</span>
             </Link>
             <div className="flex items-center gap-6 text-sm text-gray-400">
               <Link href="/" className="hover:text-white transition-colors">
@@ -35,7 +35,7 @@ export default function RootLayout({
               </Link>
               <Link
                 href="/campaigns/new"
-                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 + New
               </Link>

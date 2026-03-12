@@ -24,11 +24,11 @@ log = logging.getLogger("worker.processor")
 async def process_batch_for_campaign(campaign_id: str, campaign_slug: str) -> dict:
     """Claim and process a batch of leads for a campaign."""
     # Import here to avoid circular imports and ensure registration
-    import leadflow.enrichments  # noqa: F401
-    from leadflow.config import CampaignConfig
-    from leadflow.pipeline.batch import process_batch
-    from leadflow.pipeline.registry import build_pipeline
-    from leadflow.utils.cost_tracker import CostTracker
+    import growthpal.enrichments  # noqa: F401
+    from growthpal.config import CampaignConfig
+    from growthpal.pipeline.batch import process_batch
+    from growthpal.pipeline.registry import build_pipeline
+    from growthpal.utils.cost_tracker import CostTracker
 
     # Claim leads atomically
     leads = claim_leads(campaign_id, BATCH_SIZE, WORKER_ID)

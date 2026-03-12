@@ -154,7 +154,7 @@ export default function DashboardPage() {
             <p className="text-sm mt-2">
               Import leads with:{" "}
               <code className="bg-gray-800 px-2 py-1 rounded">
-                leadflow import -f leads.csv -c my-campaign
+                growthpal import -f leads.csv -c my-campaign
               </code>
             </p>
           </div>

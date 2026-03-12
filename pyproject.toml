@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "leadflow"
+name = "growthpal"
 version = "0.1.0"
 description = "CLI-based lead enrichment pipeline — Clay.com replacement"
 requires-python = ">=3.12"
@@ -26,7 +26,7 @@ dev = [
 ]
 
 [project.scripts]
-leadflow = "leadflow.cli:main"
+growthpal = "growthpal.cli:main"
 
 [tool.ruff]
 line-length = 100

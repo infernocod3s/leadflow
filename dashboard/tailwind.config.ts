@@ -6,7 +6,14 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        brand: {
+          gold: '#D4A017',
+          dark: '#1a1a1a',
+        }
+      }
+    },
   },
   plugins: [],
 };

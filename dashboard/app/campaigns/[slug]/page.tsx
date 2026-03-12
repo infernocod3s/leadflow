@@ -22,7 +22,7 @@ type StepCost = {
   failure_count: number;
 };
 
-// Column mapping (mirrors leadflow/integrations/csv_handler.py)
+// Column mapping (mirrors growthpal/integrations/csv_handler.py)
 const COLUMN_MAPPING: Record<string, string> = {
   email: "raw_email",
   "e-mail": "raw_email",
@@ -202,7 +202,7 @@ export default function CampaignPage() {
     return (
       <div className="text-center py-20">
         <p className="text-gray-500 text-lg">Campaign not found: {slug}</p>
-        <Link href="/" className="text-blue-400 hover:underline mt-4 block">
+        <Link href="/" className="text-amber-400 hover:underline mt-4 block">
           Back to dashboard
         </Link>
       </div>
@@ -255,7 +255,7 @@ export default function CampaignPage() {
           onClick={() => setFilter("all")}
           className={cn(
             "bg-gray-900 border rounded-xl p-3 text-left transition-colors",
-            filter === "all" ? "border-blue-500" : "border-gray-800 hover:border-gray-700"
+            filter === "all" ? "border-amber-500" : "border-gray-800 hover:border-gray-700"
           )}
         >
           <div className="text-xs text-gray-500">All</div>
@@ -267,7 +267,7 @@ export default function CampaignPage() {
             onClick={() => setFilter(s)}
             className={cn(
               "bg-gray-900 border rounded-xl p-3 text-left transition-colors",
-              filter === s ? "border-blue-500" : "border-gray-800 hover:border-gray-700"
+              filter === s ? "border-amber-500" : "border-gray-800 hover:border-gray-700"
             )}
           >
             <div className="text-xs text-gray-500">{s.replace(/_/g, " ")}</div>
@@ -528,7 +528,7 @@ function ImportModal({
               onDrop={handleDrop}
               className={cn(
                 "border-2 border-dashed rounded-xl p-12 text-center transition-colors",
-                dragOver ? "border-blue-500 bg-blue-500/10" : "border-gray-700"
+                dragOver ? "border-amber-500 bg-blue-500/10" : "border-gray-700"
               )}
             >
               <p className="text-gray-400 mb-3">Drag & drop a CSV file here, or</p>
@@ -613,7 +613,7 @@ function ImportModal({
                   </div>
                   <div className="w-full bg-gray-800 rounded-full h-2">
                     <div
-                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      className="bg-amber-500 h-2 rounded-full transition-all"
                       style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }}
                     />
                   </div>

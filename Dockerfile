@@ -4,11 +4,11 @@ WORKDIR /app
 
 # Copy and install Python dependencies
 COPY pyproject.toml .
-COPY leadflow/ leadflow/
+COPY growthpal/ growthpal/
 COPY worker/ worker/
 COPY configs/ configs/
 
-# Install the leadflow package + worker dependencies
+# Install the growthpal package + worker dependencies
 RUN pip install --no-cache-dir -e . && \
     pip install --no-cache-dir fastapi uvicorn
 
