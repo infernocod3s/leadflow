@@ -1,91 +1,110 @@
-"""Direct Postgres access for worker — uses psycopg2 for atomic operations."""
+"""Supabase REST API access for worker — uses HTTPS (IPv4 compatible)."""
 
 from __future__ import annotations
 
-import psycopg2
-import psycopg2.extras
+from supabase import Client, create_client
 
-from worker.config import DATABASE_URL
+from worker.config import SUPABASE_KEY, SUPABASE_URL
 
-_conn = None
+_client: Client | None = None
 
 
-def get_conn():
-    global _conn
-    if _conn is None or _conn.closed:
-        _conn = psycopg2.connect(DATABASE_URL)
-        _conn.autocommit = True
-    return _conn
+def get_db() -> Client:
+    global _client
+    if _client is None:
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            raise RuntimeError("SUPABASE_URL and SUPABASE_KEY are required")
+        _client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    return _client
 
 
 def claim_leads(campaign_id: str, batch_size: int, worker_id: str) -> list[dict]:
-    """Atomically claim a batch of leads for processing."""
-    conn = get_conn()
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-        cur.execute(
-            "SELECT * FROM claim_leads(%s, %s, %s)",
-            (campaign_id, batch_size, worker_id),
-        )
-        return [dict(row) for row in cur.fetchall()]
+    """Atomically claim a batch of leads for processing via RPC."""
+    db = get_db()
+    result = db.rpc(
+        "claim_leads",
+        {"p_campaign_id": campaign_id, "p_batch_size": batch_size, "p_worker_id": worker_id},
+    ).execute()
+    return result.data or []
 
 
 def release_stale_claims(timeout_minutes: int = 30) -> int:
-    """Release leads claimed by crashed workers."""
-    conn = get_conn()
-    with conn.cursor() as cur:
-        cur.execute("SELECT release_stale_claims(%s)", (timeout_minutes,))
-        return cur.fetchone()[0]
+    """Release leads claimed by crashed workers via RPC."""
+    db = get_db()
+    result = db.rpc("release_stale_claims", {"p_timeout_minutes": timeout_minutes}).execute()
+    return result.data if isinstance(result.data, int) else 0
 
 
 def get_active_campaigns() -> list[dict]:
     """Get campaigns that have leads waiting to be processed."""
-    conn = get_conn()
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-        cur.execute("""
-            SELECT DISTINCT c.id, c.slug, c.config,
-                   COUNT(l.id) FILTER (WHERE l.pipeline_status IN ('imported', 'error') AND l.claimed_by IS NULL) AS pending_count
-            FROM campaigns c
-            JOIN leads l ON l.campaign_id = c.id
-            WHERE l.pipeline_status IN ('imported', 'error')
-            AND l.claimed_by IS NULL
-            GROUP BY c.id, c.slug, c.config
-            HAVING COUNT(l.id) FILTER (WHERE l.pipeline_status IN ('imported', 'error') AND l.claimed_by IS NULL) > 0
-            ORDER BY pending_count DESC
-        """)
-        return [dict(row) for row in cur.fetchall()]
+    db = get_db()
+
+    # Get distinct campaigns with pending leads
+    result = (
+        db.table("leads")
+        .select("campaign_id")
+        .in_("pipeline_status", ["imported", "error"])
+        .is_("claimed_by", "null")
+        .execute()
+    )
+
+    if not result.data:
+        return []
+
+    # Deduplicate campaign IDs and count
+    campaign_counts: dict[str, int] = {}
+    for row in result.data:
+        cid = row["campaign_id"]
+        campaign_counts[cid] = campaign_counts.get(cid, 0) + 1
+
+    # Fetch campaign details
+    campaigns = []
+    for cid, count in campaign_counts.items():
+        c_result = db.table("campaigns").select("*").eq("id", cid).execute()
+        if c_result.data:
+            campaign = c_result.data[0]
+            campaign["pending_count"] = count
+            campaigns.append(campaign)
+
+    return sorted(campaigns, key=lambda c: c["pending_count"], reverse=True)
 
 
 def get_campaign_by_slug(slug: str) -> dict | None:
     """Get a single campaign by slug."""
-    conn = get_conn()
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-        cur.execute("SELECT * FROM campaigns WHERE slug = %s", (slug,))
-        row = cur.fetchone()
-        return dict(row) if row else None
+    db = get_db()
+    result = db.table("campaigns").select("*").eq("slug", slug).execute()
+    return result.data[0] if result.data else None
 
 
 def get_worker_stats() -> dict:
-    """Get global processing stats for the worker dashboard."""
-    conn = get_conn()
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-        cur.execute("""
-            SELECT
-                COUNT(*) FILTER (WHERE pipeline_status = 'imported') AS pending,
-                COUNT(*) FILTER (WHERE pipeline_status = 'in_progress') AS processing,
-                COUNT(*) FILTER (WHERE pipeline_status IN ('enriched', 'email_generated')) AS completed,
-                COUNT(*) FILTER (WHERE pipeline_status = 'qualified') AS qualified,
-                COUNT(*) FILTER (WHERE pipeline_status = 'disqualified') AS disqualified,
-                COUNT(*) FILTER (WHERE pipeline_status = 'pushed') AS pushed,
-                COUNT(*) FILTER (WHERE pipeline_status = 'error') AS errored,
-                COUNT(*) AS total
-            FROM leads
-        """)
-        return dict(cur.fetchone())
+    """Get global processing stats."""
+    db = get_db()
+    result = db.table("leads").select("pipeline_status").execute()
 
+    stats = {
+        "pending": 0,
+        "processing": 0,
+        "completed": 0,
+        "disqualified": 0,
+        "pushed": 0,
+        "errored": 0,
+        "total": 0,
+    }
 
-def get_campaign_queue_stats(campaign_id: str) -> list[dict]:
-    """Get queue stats for a specific campaign."""
-    conn = get_conn()
-    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-        cur.execute("SELECT * FROM campaign_queue_stats(%s)", (campaign_id,))
-        return [dict(row) for row in cur.fetchall()]
+    for row in result.data or []:
+        status = row["pipeline_status"]
+        stats["total"] += 1
+        if status == "imported":
+            stats["pending"] += 1
+        elif status == "in_progress":
+            stats["processing"] += 1
+        elif status in ("enriched", "email_generated"):
+            stats["completed"] += 1
+        elif status == "disqualified":
+            stats["disqualified"] += 1
+        elif status == "pushed":
+            stats["pushed"] += 1
+        elif status == "error":
+            stats["errored"] += 1
+
+    return stats

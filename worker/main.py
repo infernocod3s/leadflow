@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from worker.api import app
-from worker.config import API_PORT, DATABASE_URL, WORKER_ID
+from worker.config import API_PORT, SUPABASE_KEY, SUPABASE_URL, WORKER_ID
 from worker.processor import worker_loop
 
 logging.basicConfig(
@@ -29,9 +29,8 @@ def start_api_server():
 
 
 def main():
-    if not DATABASE_URL:
-        log.error("DATABASE_URL is required. Set it in .env or environment variables.")
-        log.error("Format: postgresql://postgres:PASSWORD@db.PROJECT.supabase.co:5432/postgres")
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        log.error("SUPABASE_URL and SUPABASE_KEY are required.")
         raise SystemExit(1)
 
     log.info(f"LeadFlow Worker {WORKER_ID} starting")
