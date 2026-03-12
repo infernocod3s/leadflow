@@ -137,9 +137,10 @@ def log_enrichment(
     duration_ms: int = 0,
     success: bool = True,
     error_message: str | None = None,
+    research_layer: str | None = None,
 ) -> dict:
     db = get_db()
-    result = db.table("enrichment_logs").insert({
+    row = {
         "lead_id": lead_id,
         "campaign_id": campaign_id,
         "step_name": step_name,
@@ -150,7 +151,10 @@ def log_enrichment(
         "duration_ms": duration_ms,
         "success": success,
         "error_message": error_message,
-    }).execute()
+    }
+    if research_layer is not None:
+        row["research_layer"] = research_layer
+    result = db.table("enrichment_logs").insert(row).execute()
     return result.data[0] if result.data else {}
 
 
@@ -207,3 +211,63 @@ def get_campaign_total_cost(campaign_id: str) -> float:
         .execute()
     )
     return sum(row["cost"] for row in result.data)
+
+
+# ── Batch Operations ────────────────────────────────────────────────────────
+
+
+def _chunks(items: list, size: int):
+    """Yield successive chunks from items."""
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+
+def batch_update_leads(updates: list[tuple[str, dict]]) -> int:
+    """Bulk update leads by ID in chunks of 200.
+
+    Args:
+        updates: List of (lead_id, data_dict) tuples
+
+    Returns:
+        Number of leads updated.
+    """
+    if not updates:
+        return 0
+
+    db = get_db()
+    total = 0
+
+    for chunk in _chunks(updates, 200):
+        for lead_id, data in chunk:
+            try:
+                db.table("leads").update(data).eq("id", lead_id).execute()
+                total += 1
+            except Exception as e:
+                log.warning(f"batch_update_leads: failed for {lead_id}: {e}")
+
+    return total
+
+
+def batch_log_enrichments(logs: list[dict]) -> int:
+    """Bulk insert enrichment log entries in chunks of 500.
+
+    Args:
+        logs: List of enrichment log row dicts
+
+    Returns:
+        Number of logs inserted.
+    """
+    if not logs:
+        return 0
+
+    db = get_db()
+    total = 0
+
+    for chunk in _chunks(logs, 500):
+        try:
+            db.table("enrichment_logs").insert(chunk).execute()
+            total += len(chunk)
+        except Exception as e:
+            log.warning(f"batch_log_enrichments: failed for chunk of {len(chunk)}: {e}")
+
+    return total

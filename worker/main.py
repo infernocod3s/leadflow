@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 import threading
 
 import uvicorn
@@ -28,6 +29,17 @@ def start_api_server():
     uvicorn.run(app, host="0.0.0.0", port=API_PORT, log_level="warning")
 
 
+async def _run_worker():
+    """Run worker loop with graceful shutdown cleanup."""
+    try:
+        await worker_loop()
+    finally:
+        log.info("Shutting down — closing shared HTTP client...")
+        from growthpal.http import close_http_client
+        await close_http_client()
+        log.info("Shutdown complete.")
+
+
 def main():
     if not SUPABASE_URL or not SUPABASE_KEY:
         log.error("SUPABASE_URL and SUPABASE_KEY are required.")
@@ -40,8 +52,8 @@ def main():
     api_thread = threading.Thread(target=start_api_server, daemon=True)
     api_thread.start()
 
-    # Run worker loop
-    asyncio.run(worker_loop())
+    # Run worker loop with graceful shutdown
+    asyncio.run(_run_worker())
 
 
 if __name__ == "__main__":

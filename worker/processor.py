@@ -12,6 +12,7 @@ from worker.config import (
     CAMPAIGN_SLUGS,
     CONCURRENCY,
     POLL_INTERVAL,
+    PREFETCH_SIZE,
     STALE_CLAIM_TIMEOUT,
     WORKER_ID,
 )
@@ -112,15 +113,27 @@ async def worker_loop():
                 await asyncio.sleep(POLL_INTERVAL)
                 continue
 
-            # Process each campaign
+            # Process each campaign with prefetch pattern
             total_processed = 0
             for campaign in campaigns:
                 try:
+                    cid = str(campaign["id"])
+                    cslug = campaign["slug"]
+
+                    # Process current batch
                     result = await process_batch_for_campaign(
-                        campaign_id=str(campaign["id"]),
-                        campaign_slug=campaign["slug"],
+                        campaign_id=cid, campaign_slug=cslug,
                     )
                     total_processed += result["processed"]
+
+                    # If we processed a full batch, prefetch next immediately
+                    # (keeps pipeline saturated)
+                    while result["processed"] >= BATCH_SIZE // 2:
+                        result = await process_batch_for_campaign(
+                            campaign_id=cid, campaign_slug=cslug,
+                        )
+                        total_processed += result["processed"]
+
                 except Exception as e:
                     log.error(f"Error processing campaign {campaign['slug']}: {e}")
                     stats.errors.append(f"{campaign['slug']}: {str(e)[:200]}")

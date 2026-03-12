@@ -1,4 +1,4 @@
-"""Abstract base class for enrichment steps."""
+"""Abstract base class for enrichment steps + batch log buffer."""
 
 from __future__ import annotations
 
@@ -12,6 +12,45 @@ from growthpal.utils.cost_tracker import CostTracker
 from growthpal.utils.logger import get_logger
 
 log = get_logger(__name__)
+
+
+class EnrichmentLogBuffer:
+    """Accumulates enrichment log entries and flushes in batch.
+
+    Usage:
+        buf = EnrichmentLogBuffer(flush_size=200)
+        buf.add({...})
+        buf.add({...})
+        # Auto-flushes at 200 entries, or call buf.flush() at end
+    """
+
+    def __init__(self, flush_size: int = 200):
+        self._buffer: list[dict] = []
+        self._flush_size = flush_size
+        self._total_flushed = 0
+
+    def add(self, entry: dict) -> None:
+        """Add a log entry. Auto-flushes when buffer is full."""
+        self._buffer.append(entry)
+        if len(self._buffer) >= self._flush_size:
+            self.flush()
+
+    def flush(self) -> int:
+        """Flush all buffered entries to DB. Returns count inserted."""
+        if not self._buffer:
+            return 0
+        count = db.batch_log_enrichments(self._buffer)
+        self._total_flushed += count
+        self._buffer.clear()
+        return count
+
+    @property
+    def total_flushed(self) -> int:
+        return self._total_flushed
+
+    @property
+    def pending(self) -> int:
+        return len(self._buffer)
 
 
 class EnrichmentStep(ABC):
@@ -48,6 +87,7 @@ class EnrichmentStep(ABC):
             duration_ms = int((time.monotonic() - start) * 1000)
 
             # Log enrichment to DB
+            research_layer = result.pop("_research_layer", None)
             db.log_enrichment(
                 lead_id=lead["id"],
                 campaign_id=lead["campaign_id"],
@@ -58,6 +98,7 @@ class EnrichmentStep(ABC):
                 cost=result.pop("_cost", 0.0),
                 duration_ms=duration_ms,
                 success=True,
+                research_layer=research_layer,
             )
 
             # Track cost if tracker provided

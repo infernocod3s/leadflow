@@ -5,31 +5,11 @@ from __future__ import annotations
 import httpx
 from bs4 import BeautifulSoup
 
+from growthpal.http import get_http_client
 from growthpal.utils.logger import get_logger
 from growthpal.utils.retry import async_retry
 
 log = get_logger(__name__)
-
-_http_client: httpx.AsyncClient | None = None
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ),
-}
-
-
-def _get_http_client() -> httpx.AsyncClient:
-    global _http_client
-    if _http_client is None:
-        _http_client = httpx.AsyncClient(
-            headers=HEADERS,
-            timeout=15.0,
-            follow_redirects=True,
-            limits=httpx.Limits(max_connections=50, max_keepalive_connections=10),
-        )
-    return _http_client
 
 
 def _extract_text(html: str, max_length: int = 8000) -> str:
@@ -62,7 +42,7 @@ async def scrape_website(url: str) -> str:
     if not url.startswith(("http://", "https://")):
         url = f"https://{url}"
 
-    client = _get_http_client()
+    client = get_http_client()
     response = await client.get(url)
     response.raise_for_status()
 
