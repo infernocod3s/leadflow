@@ -180,29 +180,130 @@ use_deepline: true
 deepline_before_step: "company_research"
 ```
 
+## Deploy to Railway (Workers)
+
+Railway runs the lead processing workers 24/7. Scale to 50+ worker instances for massive throughput.
+
+### 1. Push to GitHub (done)
+
+### 2. Create a Railway project
+
+- Go to [railway.app](https://railway.app)
+- New Project -> Deploy from GitHub repo
+- Select the `leadflow` repo
+
+### 3. Set environment variables
+
+In Railway dashboard -> Variables:
+
+```
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_KEY=your-service-role-key
+OPENAI_API_KEY=sk-...
+PROSPEO_API_KEY=...
+TRYKITT_API_KEY=...
+BETTERCONTACT_API_KEY=...
+REOON_API_KEY=...
+BOUNCEBAN_API_KEY=...
+SMARTLEAD_API_KEY=...
+BATCH_SIZE=50
+CONCURRENCY=20
+POLL_INTERVAL=5
+```
+
+### 4. Run the worker migration
+
+```bash
+leadflow migrate --db-url "postgresql://postgres:PASS@db.xxx.supabase.co:5432/postgres"
+```
+
+This adds the `claim_leads()` function for concurrent worker support.
+
+### 5. Scale workers
+
+In Railway -> Service -> Settings -> Replicas, increase to N instances. Each worker atomically claims batches using `FOR UPDATE SKIP LOCKED`, so they never process the same lead twice.
+
+### Worker API
+
+Each worker exposes health and monitoring endpoints:
+
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Health check (used by Railway) |
+| `GET /stats` | Worker instance stats (processed, errors, cost) |
+| `GET /queue` | Global queue stats across all campaigns |
+| `GET /campaigns` | Campaigns with pending leads |
+
+## Deploy Dashboard to Vercel
+
+The Next.js dashboard shows campaigns, leads, pipeline progress, and cost tracking.
+
+### 1. Deploy
+
+```bash
+cd dashboard
+npm install
+npx vercel
+```
+
+Or connect the GitHub repo to Vercel and set the root directory to `dashboard/`.
+
+### 2. Set environment variables
+
+In Vercel dashboard -> Settings -> Environment Variables:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Dashboard Pages
+
+- **`/`** — Campaign list with global stats and pipeline progress bars
+- **`/campaigns/[slug]`** — Campaign detail: lead table, status breakdown, step cost analysis, lead inspector modal
+- **`/costs`** — Cost overview: spend by step, by campaign, tokens, averages
+
 ## Architecture
 
 ```
-leadflow/
-├── ai/                   # OpenAI client + prompt templates
-├── db/                   # Supabase client, queries, migrations
-├── enrichments/          # 9 built-in enrichment steps + custom AI
-├── integrations/         # Prospeo, TryKitt, BetterContact, Reoon,
-│                         # BounceBan, Smartlead, Deepline, CSV
-├── pipeline/             # Batch processor, step registry, runner
-├── scrapers/             # Website content scraper
-├── utils/                # Logger, retry, rate limiter, cost tracker
-├── cli.py                # CLI entry point (argparse)
-└── config.py             # .env + YAML config loader
+leadflow/               # Python package — enrichment pipeline
+├── ai/                 # OpenAI client + prompt templates
+├── db/                 # Supabase client, queries, migrations
+├── enrichments/        # 9 built-in steps + custom AI
+├── integrations/       # Prospeo, TryKitt, BetterContact, Reoon,
+│                       # BounceBan, Smartlead, Deepline, CSV
+├── pipeline/           # Batch processor, step registry, runner
+├── scrapers/           # Website content scraper
+├── utils/              # Logger, retry, rate limiter, cost tracker
+├── cli.py              # CLI entry point
+└── config.py           # .env + YAML config loader
+
+worker/                 # Railway worker service
+├── main.py             # Entry point (worker loop + API server)
+├── processor.py        # Lead processing with atomic claiming
+├── api.py              # FastAPI health/monitoring endpoints
+├── db.py               # Direct Postgres access (psycopg2)
+└── stats.py            # In-memory worker stats
+
+dashboard/              # Vercel Next.js dashboard
+├── app/                # App Router pages
+│   ├── page.tsx        # Campaign overview
+│   ├── campaigns/      # Campaign detail
+│   └── costs/          # Cost analytics
+└── lib/                # Supabase client + utilities
+
+Dockerfile              # Railway container
+railway.toml            # Railway deployment config
 ```
 
 ### Key Design Decisions
 
-- **Supabase as the database** — free tier, instant REST API, real-time dashboard for monitoring
+- **Railway workers** — scale horizontally with `FOR UPDATE SKIP LOCKED` for safe concurrent processing
+- **Supabase** — free tier, instant REST API, real-time subscriptions for dashboard
 - **GATE steps** — ICP qualification happens *before* email finding to save credits on bad leads
 - **Waterfall providers** — try cheaper/faster providers first, fall back to expensive ones
 - **YAML-driven custom steps** — non-technical users can add AI enrichment without writing Python
-- **Async pipeline with concurrency control** — process 20 leads simultaneously by default
 - **Per-lead cost tracking** — every API call is logged with token counts and costs
 
 ## Cost Tracking
@@ -213,7 +314,7 @@ Every API call is logged with:
 - Duration in ms
 - Success/failure status
 
-View costs per campaign:
+View costs via CLI or the dashboard:
 
 ```bash
 leadflow stats -c my-campaign
@@ -230,6 +331,9 @@ ruff check .
 
 # Run tests
 pytest
+
+# Run dashboard locally
+cd dashboard && npm install && npm run dev
 ```
 
 ## Requirements
@@ -238,6 +342,8 @@ pytest
 - Supabase account (free tier works)
 - OpenAI API key
 - At least one email finding provider key (Prospeo, TryKitt, or BetterContact)
+- Railway account (for workers) — ~$20/mo
+- Vercel account (for dashboard) — free tier works
 
 ## License
 
