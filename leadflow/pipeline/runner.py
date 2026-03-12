@@ -33,9 +33,13 @@ async def run_pipeline(
 
     campaign_id = campaign["id"]
 
-    # Create campaign config if not provided
+    # Create campaign config if not provided — load from DB
     if campaign_config is None:
-        campaign_config = CampaignConfig()
+        db_config = campaign.get("config") or {}
+        if db_config:
+            campaign_config = CampaignConfig.from_dict(db_config)
+        else:
+            campaign_config = CampaignConfig()
 
     # Resolve steps (includes custom AI + Deepline if configured)
     steps = build_pipeline(step_names or ["all"], campaign_config)

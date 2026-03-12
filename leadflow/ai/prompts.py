@@ -44,8 +44,8 @@ def icp_qualification_prompt(
             "role": "user",
             "content": (
                 f"ICP Description:\n{icp_description}\n\n"
-                f"Target Industries: {', '.join(target_industries)}\n\n"
-                f"Company Info:\n{company_summary}"
+                + (f"Target Industries: {', '.join(target_industries)}\n\n" if target_industries else "Target Industries: ANY (no industry filter — all B2B industries qualify)\n\n")
+                + f"Company Info:\n{company_summary}"
             ),
         },
     ]

@@ -81,6 +81,11 @@ class CampaignConfig:
             data = yaml.safe_load(f) or {}
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "CampaignConfig":
+        """Create from a dictionary (e.g. campaigns.config JSONB)."""
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
 
 # Singleton
 _config: Config | None = None
