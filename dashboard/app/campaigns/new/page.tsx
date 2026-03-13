@@ -49,7 +49,7 @@ type Strategy = {
   priority?: number;
   conditions: Condition[];
   email_prompt: string;
-  smartlead_campaign_id: string;
+  campaign_name: string;
 };
 
 const STEPS = ["Company", "Targeting", "Strategies", "Review"];
@@ -81,8 +81,6 @@ export default function NewCampaignPage() {
   const [routingMode, setRoutingMode] = useState<"testing" | "optimization">("testing");
   const [progressiveMode, setProgressiveMode] = useState(true);
 
-  // Step 4: Smartlead default
-  const [defaultSmartleadId, setDefaultSmartleadId] = useState("");
 
   function generateSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -103,7 +101,7 @@ export default function NewCampaignPage() {
         type,
         conditions: type === "signal" ? [{ field: "", operator: "not_empty" }] : [],
         email_prompt: "",
-        smartlead_campaign_id: "",
+        campaign_name: "",
       },
     ]);
   }
@@ -221,14 +219,14 @@ export default function NewCampaignPage() {
               type: "signal",
               priority: i + 1,
               conditions: s.conditions.filter((c) => c.field),
-              smartlead_campaign_id: s.smartlead_campaign_id ? parseInt(s.smartlead_campaign_id) : null,
+              campaign_name: s.campaign_name || s.name || s.id,
               email_prompt: s.email_prompt,
             })),
             ...fallbackStrategies.map((s) => ({
               id: s.id,
               name: s.name || s.id,
               type: "fallback",
-              smartlead_campaign_id: s.smartlead_campaign_id ? parseInt(s.smartlead_campaign_id) : null,
+              campaign_name: s.campaign_name || s.name || s.id,
               email_prompt: s.email_prompt,
             })),
           ],
@@ -244,12 +242,10 @@ export default function NewCampaignPage() {
       }
 
       // Create campaign
-      const smartleadId = defaultSmartleadId ? parseInt(defaultSmartleadId) : null;
       const { error: campErr } = await getSupabase().from("campaigns").insert({
         client_id: clientId,
         slug: slug.trim(),
         config,
-        smartlead_campaign_id: smartleadId,
       });
 
       if (campErr) throw campErr;
@@ -645,7 +641,7 @@ export default function NewCampaignPage() {
                   <span className="w-2 h-2 rounded-full bg-blue-400" />
                   <span className="text-gray-300">{s.name || s.id}</span>
                   <span className="text-gray-600">— {s.conditions.length} condition{s.conditions.length !== 1 ? "s" : ""}</span>
-                  {s.smartlead_campaign_id && <span className="text-gray-600">— SL #{s.smartlead_campaign_id}</span>}
+                  {s.campaign_name && <span className="text-gray-600">— {s.campaign_name}</span>}
                 </div>
               ))}
               {fallbackStrategies.map((s) => (
@@ -653,7 +649,7 @@ export default function NewCampaignPage() {
                   <span className="w-2 h-2 rounded-full bg-gray-400" />
                   <span className="text-gray-300">{s.name || s.id}</span>
                   <span className="text-gray-600">— fallback</span>
-                  {s.smartlead_campaign_id && <span className="text-gray-600">— SL #{s.smartlead_campaign_id}</span>}
+                  {s.campaign_name && <span className="text-gray-600">— {s.campaign_name}</span>}
                 </div>
               ))}
               <div className="text-xs text-gray-500 mt-1">
@@ -666,19 +662,6 @@ export default function NewCampaignPage() {
             <ReviewRow label="Mode" value={progressiveMode ? "Progressive Batching (10 → 20 → 50 → 100 → All)" : "Process all leads immediately"} />
           </Section>
 
-          {defaultSmartleadId === "" && strategies.every((s) => !s.smartlead_campaign_id) && (
-            <Section title="Default Smartlead Campaign (optional)">
-              <Field label="Smartlead Campaign ID">
-                <input
-                  type="number"
-                  value={defaultSmartleadId}
-                  onChange={(e) => setDefaultSmartleadId(e.target.value)}
-                  placeholder="Set after creating in Smartlead"
-                  className="input"
-                />
-              </Field>
-            </Section>
-          )}
         </div>
       )}
 
@@ -772,11 +755,11 @@ function StrategyCard({
           className="input flex-1 text-sm font-medium"
         />
         <input
-          type="number"
-          value={strategy.smartlead_campaign_id}
-          onChange={(e) => onUpdate({ smartlead_campaign_id: e.target.value })}
-          placeholder="SL Campaign ID"
-          className="input w-36 text-xs"
+          type="text"
+          value={strategy.campaign_name}
+          onChange={(e) => onUpdate({ campaign_name: e.target.value })}
+          placeholder="Campaign name"
+          className="input w-44 text-xs"
         />
         <button
           type="button"
