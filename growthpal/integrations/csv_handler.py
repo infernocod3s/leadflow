@@ -51,6 +51,7 @@ EXPORT_FIELDS = [
     "company_summary", "company_employee_count", "company_funding",
     "icp_qualified", "icp_reason", "title_relevant",
     "email_subject", "email_body",
+    "strategy_id", "strategy_name",
     "pipeline_status",
 ]
 

@@ -84,6 +84,9 @@ class CampaignConfig:
     custom_ai_steps: list[dict] = field(default_factory=list)
     custom_ai_after_step: str = "signal_detection"
 
+    # Strategy-based routing (signal → angle, fallback → random/optimized)
+    strategy_routing: dict = field(default_factory=dict)
+
     # Multi-model configuration
     research_model: str = "gemini-2.0-flash-lite"
     email_generation_model: str = "deepseek-chat"

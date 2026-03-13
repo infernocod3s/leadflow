@@ -10,4 +10,5 @@ from growthpal.enrichments import (  # noqa: F401
     job_title_icp,
     name_cleaning,
     signal_detection,
+    strategy_router,
 )

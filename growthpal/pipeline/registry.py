@@ -17,7 +17,8 @@ PIPELINE_ORDER: list[str] = [
     "name_cleaning",          # 6. Clean names + company
     "job_title_icp",          # 7. GATE: role relevance check
     "signal_detection",       # 8. Tech/funding/hiring signals
-    "email_generation",       # 9. Generate cold email copy
+    "strategy_routing",       # 9. Assign lead to strategy (signal or fallback)
+    "email_generation",       # 10. Generate cold email copy
 ]
 
 

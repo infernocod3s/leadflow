@@ -4,6 +4,7 @@ from enum import Enum
 
 
 class PipelineStatus(str, Enum):
+    QUEUED = "queued"
     IMPORTED = "imported"
     IN_PROGRESS = "in_progress"
     ENRICHED = "enriched"

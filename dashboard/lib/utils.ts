@@ -23,6 +23,7 @@ export function formatDate(date: string): string {
 
 export function statusColor(status: string): string {
   const colors: Record<string, string> = {
+    queued: "bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/20",
     imported: "bg-gray-500/10 text-gray-400 ring-1 ring-gray-500/20",
     in_progress: "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20",
     enriched: "bg-green-500/10 text-green-400 ring-1 ring-green-500/20",

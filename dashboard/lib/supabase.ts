@@ -39,6 +39,9 @@ export type Lead = {
   signals: Record<string, unknown>;
   email_subject: string | null;
   email_body: string | null;
+  strategy_id: string | null;
+  strategy_name: string | null;
+  batch_number: number | null;
   pipeline_status: string;
   current_step: string | null;
   error_message: string | null;

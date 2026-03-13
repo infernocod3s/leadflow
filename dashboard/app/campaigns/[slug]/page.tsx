@@ -57,8 +57,11 @@ const COLUMN_MAPPING: Record<string, string> = {
 const EXPORT_FIELDS = [
   "email", "first_name", "last_name", "company_name", "job_title",
   "website", "company_summary", "icp_qualified", "icp_reason",
-  "title_relevant", "email_subject", "email_body", "pipeline_status",
+  "title_relevant", "email_subject", "email_body",
+  "strategy_id", "strategy_name", "pipeline_status",
 ];
+
+const BATCH_SIZES = [10, 20, 50, 100];
 
 export default function CampaignPage() {
   const params = useParams();
@@ -244,7 +247,7 @@ export default function CampaignPage() {
 
   const totalLeads = Object.values(statusCounts).reduce((a, b) => a + b, 0);
   const statuses = [
-    "imported", "in_progress", "enriched", "email_generated",
+    "queued", "imported", "in_progress", "enriched", "email_generated",
     "qualified", "disqualified", "pushed", "error",
   ];
 
@@ -313,6 +316,21 @@ export default function CampaignPage() {
         ))}
       </div>
 
+      {/* Progressive Execution Panel */}
+      {campaign.config && (campaign.config as any).progressive_batch?.enabled && (
+        <ProgressivePanel
+          campaign={campaign}
+          statusCounts={statusCounts}
+          totalLeads={totalLeads}
+          onRefresh={loadCampaign}
+        />
+      )}
+
+      {/* Strategy Distribution */}
+      {campaign.config && (campaign.config as any).strategy_routing?.strategies?.length > 0 && (
+        <StrategyDistribution campaignId={campaign.id} />
+      )}
+
       {/* Cost and step breakdown */}
       {stepCosts.length > 0 && (
         <div className="card p-6">
@@ -376,6 +394,7 @@ export default function CampaignPage() {
                 <th className="table-header px-4 py-3">Name</th>
                 <th className="table-header px-4 py-3">Company</th>
                 <th className="table-header px-4 py-3">Title</th>
+                <th className="table-header px-4 py-3">Strategy</th>
                 <th className="table-header px-4 py-3">Status</th>
                 <th className="table-header px-4 py-3">ICP</th>
               </tr>
@@ -400,6 +419,9 @@ export default function CampaignPage() {
                   <td className="px-4 py-3 text-gray-400">
                     {lead.job_title || lead.raw_title || "—"}
                   </td>
+                  <td className="px-4 py-3 text-xs text-gray-400">
+                    {(lead as any).strategy_name || (lead as any).strategy_id || "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", statusColor(lead.pipeline_status))}>
                       {lead.pipeline_status}
@@ -414,7 +436,7 @@ export default function CampaignPage() {
               ))}
               {leads.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
                     {filter !== "all"
                       ? `No leads with status "${filter.replace(/_/g, " ")}". Try selecting a different filter.`
                       : "No leads found. Import a CSV to get started."}
@@ -431,6 +453,7 @@ export default function CampaignPage() {
       {showImport && campaign && (
         <ImportModal
           campaignId={campaign.id}
+          progressiveMode={!!(campaign.config as any)?.progressive_batch?.enabled}
           onClose={() => setShowImport(false)}
           onDone={() => { setShowImport(false); loadCampaign(); }}
         />
@@ -454,14 +477,292 @@ export default function CampaignPage() {
   );
 }
 
+// ── Progressive Execution Panel ──────────────────────────────────────────────
+
+function ProgressivePanel({
+  campaign,
+  statusCounts,
+  totalLeads,
+  onRefresh,
+}: {
+  campaign: Campaign;
+  statusCounts: Record<string, number>;
+  totalLeads: number;
+  onRefresh: () => void;
+}) {
+  const [releasing, setReleasing] = useState(false);
+  const [result, setResult] = useState<{ released: number; message: string } | null>(null);
+
+  const queuedCount = statusCounts["queued"] || 0;
+  const releasedCount = totalLeads - queuedCount;
+  const batchConfig = (campaign.config as any)?.progressive_batch;
+  const batchSizes: number[] = batchConfig?.batch_sizes || BATCH_SIZES;
+
+  // Determine which batch we're on based on cumulative releases
+  let currentBatchIndex = 0;
+  let cumulative = 0;
+  for (let i = 0; i < batchSizes.length; i++) {
+    cumulative += batchSizes[i];
+    if (releasedCount < cumulative) {
+      currentBatchIndex = i;
+      break;
+    }
+    if (i === batchSizes.length - 1) {
+      currentBatchIndex = batchSizes.length; // Past all defined batches
+    }
+  }
+
+  const allBatchesDone = currentBatchIndex >= batchSizes.length;
+  const nextBatchSize = allBatchesDone ? queuedCount : batchSizes[currentBatchIndex] - (releasedCount - (currentBatchIndex > 0 ? batchSizes.slice(0, currentBatchIndex).reduce((a, b) => a + b, 0) : 0));
+  const effectiveNextBatch = allBatchesDone ? queuedCount : Math.min(batchSizes[currentBatchIndex], queuedCount);
+
+  // Processing stats
+  const inProgress = statusCounts["in_progress"] || 0;
+  const processed = (statusCounts["enriched"] || 0) + (statusCounts["email_generated"] || 0) +
+    (statusCounts["qualified"] || 0) + (statusCounts["disqualified"] || 0) +
+    (statusCounts["pushed"] || 0) + (statusCounts["error"] || 0);
+  const isProcessing = inProgress > 0;
+
+  async function releaseBatch(size: number) {
+    setReleasing(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/release-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          campaign_id: campaign.id,
+          batch_size: size,
+          batch_number: currentBatchIndex + 1,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setResult(data);
+      onRefresh();
+    } catch (err: any) {
+      setResult({ released: 0, message: err.message });
+    }
+    setReleasing(false);
+  }
+
+  async function releaseAll() {
+    await releaseBatch(queuedCount);
+  }
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Progressive Execution</h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Review results at each stage before scaling up
+          </p>
+        </div>
+        {isProcessing && (
+          <div className="flex items-center gap-2 text-xs text-amber-400">
+            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            Processing {inProgress} leads...
+          </div>
+        )}
+      </div>
+
+      {/* Batch stages visualization */}
+      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+        {batchSizes.map((size, i) => {
+          const cumulativeUpTo = batchSizes.slice(0, i + 1).reduce((a, b) => a + b, 0);
+          const isDone = releasedCount >= cumulativeUpTo;
+          const isCurrent = !isDone && (i === 0 || releasedCount >= batchSizes.slice(0, i).reduce((a, b) => a + b, 0));
+          return (
+            <div key={i} className="flex items-center gap-1">
+              <div
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-mono transition-all",
+                  isDone
+                    ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                    : isCurrent
+                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-glow-gold-sm"
+                    : "bg-gray-800/40 text-gray-500 border border-gray-800/40"
+                )}
+              >
+                {isDone && <span className="mr-1">&#10003;</span>}
+                {size}
+              </div>
+              {i < batchSizes.length - 1 && (
+                <svg className="w-3 h-3 text-gray-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              )}
+            </div>
+          );
+        })}
+        <svg className="w-3 h-3 text-gray-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        <div
+          className={cn(
+            "px-3 py-1.5 rounded-lg text-xs font-mono transition-all",
+            queuedCount === 0 && totalLeads > 0
+              ? "bg-green-500/10 text-green-400 border border-green-500/20"
+              : allBatchesDone && queuedCount > 0
+              ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+              : "bg-gray-800/40 text-gray-500 border border-gray-800/40"
+          )}
+        >
+          {queuedCount === 0 && totalLeads > 0 ? "✓ " : ""}All
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <span>{releasedCount} released</span>
+          <span>{queuedCount} queued</span>
+        </div>
+        <div className="w-full bg-gray-800/50 rounded-full h-1.5">
+          <div
+            className="bg-gradient-to-r from-amber-600 to-amber-400 h-1.5 rounded-full transition-all duration-500"
+            style={{ width: `${totalLeads > 0 ? (releasedCount / totalLeads) * 100 : 0}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Actions */}
+      {result && (
+        <div className={cn(
+          "rounded-lg p-3 text-sm mb-3",
+          result.released > 0
+            ? "bg-green-500/10 border border-green-500/20 text-green-400"
+            : "bg-red-500/10 border border-red-500/20 text-red-400"
+        )}>
+          {result.message}
+        </div>
+      )}
+
+      {queuedCount > 0 ? (
+        <div className="flex gap-2">
+          {!allBatchesDone ? (
+            <button
+              onClick={() => releaseBatch(effectiveNextBatch)}
+              disabled={releasing || isProcessing}
+              className="btn-primary text-sm"
+            >
+              {releasing
+                ? "Releasing..."
+                : isProcessing
+                ? "Wait for processing..."
+                : `Run Next Batch (${effectiveNextBatch} leads)`}
+            </button>
+          ) : (
+            <button
+              onClick={releaseAll}
+              disabled={releasing || isProcessing}
+              className="btn-primary text-sm"
+            >
+              {releasing
+                ? "Releasing..."
+                : isProcessing
+                ? "Wait for processing..."
+                : `Run All Remaining (${queuedCount} leads)`}
+            </button>
+          )}
+          {!allBatchesDone && queuedCount > effectiveNextBatch && (
+            <button
+              onClick={releaseAll}
+              disabled={releasing || isProcessing}
+              className="btn-secondary text-sm"
+            >
+              Skip to All ({queuedCount})
+            </button>
+          )}
+        </div>
+      ) : totalLeads > 0 ? (
+        <div className="text-sm text-green-400">
+          All leads released and processed. Review results below.
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500">
+          Import leads to get started. They&apos;ll be queued for progressive execution.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Strategy Distribution ───────────────────────────────────────────────────
+
+function StrategyDistribution({ campaignId }: { campaignId: string }) {
+  const [distribution, setDistribution] = useState<Record<string, number>>({});
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await getSupabase()
+        .from("leads")
+        .select("strategy_id, strategy_name")
+        .eq("campaign_id", campaignId)
+        .not("strategy_id", "is", null);
+
+      if (!data || data.length === 0) {
+        setLoaded(true);
+        return;
+      }
+
+      const counts: Record<string, number> = {};
+      for (const lead of data) {
+        const label = lead.strategy_name || lead.strategy_id || "unknown";
+        counts[label] = (counts[label] || 0) + 1;
+      }
+      setDistribution(counts);
+      setLoaded(true);
+    }
+    load();
+  }, [campaignId]);
+
+  if (!loaded || Object.keys(distribution).length === 0) return null;
+
+  const total = Object.values(distribution).reduce((a, b) => a + b, 0);
+  const colors = [
+    "bg-blue-400", "bg-emerald-400", "bg-purple-400", "bg-orange-400",
+    "bg-pink-400", "bg-cyan-400", "bg-yellow-400",
+  ];
+
+  return (
+    <div className="card p-6">
+      <h2 className="text-sm font-semibold text-white mb-3">Strategy Distribution</h2>
+      <div className="w-full bg-gray-800/50 rounded-full h-3 flex overflow-hidden mb-3">
+        {Object.entries(distribution).map(([name, count], i) => (
+          <div
+            key={name}
+            className={cn("h-3 transition-all duration-500", colors[i % colors.length])}
+            style={{ width: `${(count / total) * 100}%` }}
+            title={`${name}: ${count}`}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {Object.entries(distribution).map(([name, count], i) => (
+          <div key={name} className="flex items-center gap-1.5 text-xs">
+            <div className={cn("w-2 h-2 rounded-full", colors[i % colors.length])} />
+            <span className="text-gray-300">{name}</span>
+            <span className="text-gray-500">{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Import CSV Modal ────────────────────────────────────────────────────────
 
 function ImportModal({
   campaignId,
+  progressiveMode,
   onClose,
   onDone,
 }: {
   campaignId: string;
+  progressiveMode?: boolean;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -535,7 +836,7 @@ function ImportModal({
       const leads = batch.map((row) => {
         const lead: Record<string, string> = {
           campaign_id: campaignId,
-          pipeline_status: "imported",
+          pipeline_status: progressiveMode ? "queued" : "imported",
         };
         for (const [csvCol, dbField] of Object.entries(mapping)) {
           if (dbField && row[csvCol]?.trim()) {
@@ -890,6 +1191,7 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               label="Title Relevant"
               value={lead.title_relevant === null ? "Pending" : lead.title_relevant ? "Yes" : "No"}
             />
+            <DetailField label="Strategy" value={(lead as any).strategy_name || (lead as any).strategy_id} />
           </Section>
 
           {lead.company_summary && (
