@@ -198,13 +198,17 @@ export default function CampaignPage() {
     if (!campaign) return;
     setRetrying(true);
     try {
-      const res = await fetch("/api/retry-errors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaign_id: campaign.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const { error } = await getSupabase()
+        .from("leads")
+        .update({
+          pipeline_status: "imported",
+          error_message: null,
+          current_step: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("campaign_id", campaign.id)
+        .eq("pipeline_status", "error");
+      if (error) throw error;
       loadCampaign();
     } catch (err: any) {
       alert(`Retry failed: ${err.message}`);
@@ -1200,13 +1204,16 @@ function LeadModal({ lead, onClose, onRetry }: { lead: Lead; onClose: () => void
   async function handleRetryLead() {
     setRetryingLead(true);
     try {
-      const res = await fetch("/api/retry-errors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaign_id: lead.campaign_id, lead_ids: [lead.id] }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const { error } = await getSupabase()
+        .from("leads")
+        .update({
+          pipeline_status: "imported",
+          error_message: null,
+          current_step: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", lead.id);
+      if (error) throw error;
       onRetry?.();
       onClose();
     } catch (err: any) {
