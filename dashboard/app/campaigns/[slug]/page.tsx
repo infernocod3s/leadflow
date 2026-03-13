@@ -80,6 +80,7 @@ export default function CampaignPage() {
   const [showImport, setShowImport] = useState(false);
   const [showPush, setShowPush] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const loadCampaign = useCallback(async () => {
     const { data: cData } = await getSupabase()
@@ -193,6 +194,24 @@ export default function CampaignPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function handleRetryErrors() {
+    if (!campaign) return;
+    setRetrying(true);
+    try {
+      const res = await fetch("/api/retry-errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaign_id: campaign.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      loadCampaign();
+    } catch (err: any) {
+      alert(`Retry failed: ${err.message}`);
+    }
+    setRetrying(false);
+  }
+
   if (loading) {
     return (
       <div className="space-y-8 animate-fade-in">
@@ -278,6 +297,15 @@ export default function CampaignPage() {
             <button onClick={() => setShowPush(true)} className="btn-secondary text-xs">
               Push to Smartlead
             </button>
+            {(statusCounts["error"] || 0) > 0 && (
+              <button
+                onClick={handleRetryErrors}
+                disabled={retrying}
+                className="btn-secondary text-xs text-red-400 border-red-500/20 hover:border-red-500/40"
+              >
+                {retrying ? "Retrying..." : `Retry ${statusCounts["error"]} Errors`}
+              </button>
+            )}
             <button onClick={() => setShowConfig(true)} className="btn-secondary text-xs">
               Config
             </button>
@@ -449,7 +477,7 @@ export default function CampaignPage() {
       </div>
 
       {/* Modals */}
-      {selectedLead && <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
+      {selectedLead && <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} onRetry={loadCampaign} />}
       {showImport && campaign && (
         <ImportModal
           campaignId={campaign.id}
@@ -1166,7 +1194,27 @@ function ConfigModal({
 
 // ── Lead Detail Modal ───────────────────────────────────────────────────────
 
-function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
+function LeadModal({ lead, onClose, onRetry }: { lead: Lead; onClose: () => void; onRetry?: () => void }) {
+  const [retryingLead, setRetryingLead] = useState(false);
+
+  async function handleRetryLead() {
+    setRetryingLead(true);
+    try {
+      const res = await fetch("/api/retry-errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaign_id: lead.campaign_id, lead_ids: [lead.id] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      onRetry?.();
+      onClose();
+    } catch (err: any) {
+      alert(`Retry failed: ${err.message}`);
+    }
+    setRetryingLead(false);
+  }
+
   return (
     <ModalOverlay onClose={onClose}>
       <div className="max-w-2xl w-full max-h-[85vh] overflow-y-auto">
@@ -1209,7 +1257,14 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
           {lead.error_message && (
             <Section title="Error">
-              <p className="text-sm text-red-400">{lead.error_message}</p>
+              <p className="text-sm text-red-400 mb-3">{lead.error_message}</p>
+              <button
+                onClick={handleRetryLead}
+                disabled={retryingLead}
+                className="btn-primary text-xs"
+              >
+                {retryingLead ? "Retrying..." : "Retry This Lead"}
+              </button>
             </Section>
           )}
         </div>
