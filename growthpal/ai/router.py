@@ -17,7 +17,7 @@ def _get_provider(model: str) -> str:
 
 async def chat_completion(
     messages: list[dict[str, str]],
-    model: str = Model.GEMINI_FLASH_LITE,
+    model: str = Model.GPT4O_MINI,
     temperature: float = 0.2,
     max_tokens: int = 1000,
     response_format: dict | None = None,
@@ -62,7 +62,7 @@ async def chat_completion(
 
 async def chat_json(
     messages: list[dict[str, str]],
-    model: str = Model.GEMINI_FLASH_LITE,
+    model: str = Model.GPT4O_MINI,
     temperature: float = 0.1,
     max_tokens: int = 1000,
 ) -> dict[str, Any]:

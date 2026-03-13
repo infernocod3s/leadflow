@@ -88,9 +88,9 @@ class CampaignConfig:
     strategy_routing: dict = field(default_factory=dict)
 
     # Multi-model configuration
-    research_model: str = "gemini-2.0-flash-lite"
-    email_generation_model: str = "deepseek-chat"
-    classification_model: str = "gemini-2.0-flash-lite"
+    research_model: str = "gpt-4o-mini"
+    email_generation_model: str = "gpt-4o-mini"
+    classification_model: str = "gpt-4o-mini"
 
     # Search provider: "serper" or "tavily"
     search_provider: str = "serper"
